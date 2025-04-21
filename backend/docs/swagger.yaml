@@ -1,0 +1,287 @@
+openapi: 3.0.0
+info:
+  title: E-Commerce API
+  description: API documentation for the E-Commerce website
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: Local server
+
+paths:
+  /api/users/register:
+    post:
+      summary: Register a new user
+      description: Creates a new user account
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  example: johndoe@example.com
+                password:
+                  type: string
+                  example: "123456"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    example: 60b6c0f7c45e3a1a8c2b9a67
+                  name:
+                    type: string
+                    example: John Doe
+                  email:
+                    type: string
+                    example: johndoe@example.com
+        "400":
+          description: User already exists
+        "500":
+          description: Server error
+
+  /api/users/login:
+    post:
+      summary: User Login
+      description: Authenticates a user and returns a JWT token
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: johndoe@example.com
+                password:
+                  type: string
+                  example: "123456"
+      responses:
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: Invalid credentials
+        "500":
+          description: Server error
+
+  /api/categories:
+    get:
+      summary: Get all categories
+      description: Retrieves all categories with their product counts
+      tags:
+        - Categories
+      responses:
+        "200":
+          description: Successfully retrieved categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "500":
+          description: Server error
+
+  /api/categories/create:
+    post:
+      summary: Create a new category
+      description: Creates a new category (requires manage:categories permission)
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Electronics"
+                  minLength: 2
+                  maxLength: 50
+                description:
+                  type: string
+                  example: "Electronic devices and accessories"
+                  maxLength: 500
+                isActive:
+                  type: boolean
+                  example: true
+      responses:
+        "201":
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Validation error or category already exists
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "500":
+          description: Server error
+
+  /api/categories/{id}:
+    put:
+      summary: Update a category
+      description: Updates an existing category (requires manage:categories permission)
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Category ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Electronics"
+                description:
+                  type: string
+                  example: "Electronic devices and accessories"
+                isActive:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Validation error or category name already exists
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Category not found
+        "500":
+          description: Server error
+
+    delete:
+      summary: Delete a category
+      description: Deletes a category if no products are associated with it (requires manage:categories permission)
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Category ID
+      responses:
+        "200":
+          description: Category deleted successfully
+        "400":
+          description: Cannot delete category with associated products
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Category not found
+        "500":
+          description: Server error
+
+  /api/categories/slug/{slug}:
+    get:
+      summary: Get category by slug
+      description: Retrieves a category using its slug
+      tags:
+        - Categories
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+          description: Category slug
+      responses:
+        "200":
+          description: Successfully retrieved category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          description: Category not found
+        "500":
+          description: Server error
+
+components:
+  schemas:
+    Category:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "60b6c0f7c45e3a1a8c2b9a67"
+        name:
+          type: string
+          example: "Electronics"
+        description:
+          type: string
+          example: "Electronic devices and accessories"
+        isActive:
+          type: boolean
+          example: true
+        slug:
+          type: string
+          example: "electronics"
+        productCount:
+          type: number
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
